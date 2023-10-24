@@ -1,4 +1,4 @@
-from tkinter import Tk, Canvas, Button, filedialog, messagebox, simpledialog
+from tkinter import Tk, Canvas, Button, filedialog, messagebox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from PIL import Image, ImageTk
 import os
@@ -20,8 +20,8 @@ class BatchBackgroundRemoverApp:
         self.pil_image = None
         self.photo_image = None
         self.image_obj_id = None
-        self.zoom_factor = 1.0
-        self.original_pil_image = None
+        self.zoom_factors = [0.1, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0]  # Add more zoom levels if needed
+        self.current_zoom_level = 5  # Start with the original size
 
         self.canvas = Canvas(self.root, width=self.canvas_width, height=self.canvas_height)
         self.canvas.pack(fill="both", expand=True)
@@ -77,13 +77,12 @@ class BatchBackgroundRemoverApp:
             image_path = self.images[self.current_image_index]
             try:
                 pil_image = Image.open(image_path)
-                self.original_pil_image = pil_image.copy()
                 self.pil_image = pil_image
-                self.pil_image = self.zoom_image(self.pil_image, self.zoom_factor)
+                self.pil_image = self.zoom_image(self.pil_image, self.zoom_factors[self.current_zoom_level])
                 self.photo_image = ImageTk.PhotoImage(self.pil_image)
 
-                x = (self.canvas.winfo_width() - self.photo_image.width()) / 2
-                y = (self.canvas.winfo_height() - self.photo_image.height()) / 2
+                x = (self.canvas_width - self.photo_image.width()) / 2
+                y = (self.canvas_height - self.photo_image.height()) / 2
 
                 self.image_obj_id = self.canvas.create_image(x, y, anchor="nw", image=self.photo_image)
 
@@ -92,6 +91,8 @@ class BatchBackgroundRemoverApp:
                 messagebox.showerror("Error", f"Failed to open image: {e}")
 
     def on_canvas_resize(self, event):
+        self.canvas_width = event.width
+        self.canvas_height = event.height
         self.show_current_image()
 
     def zoom_image(self, image, factor):
@@ -101,23 +102,13 @@ class BatchBackgroundRemoverApp:
         return image.resize((new_width, new_height), Image.ANTIALIAS)
 
     def zoom(self, event):
-        if self.pil_image:
-            factor = 1.2 if event.delta > 0 else 0.8
+        if self.images:
+            if event.delta > 0:
+                self.current_zoom_level = min(self.current_zoom_level + 1, len(self.zoom_factors) - 1)
+            else:
+                self.current_zoom_level = max(self.current_zoom_level - 1, 0)
 
-            # Limit the zoom to a minimum and maximum scale
-            self.zoom_factor *= factor
-            if self.zoom_factor < 0.1:
-                self.zoom_factor = 0.1
-            if self.zoom_factor > 5.0:
-                self.zoom_factor = 5.0
-
-            self.pil_image = self.zoom_image(self.original_pil_image.copy(), self.zoom_factor)
-            x = (self.canvas.winfo_width() - self.pil_image.width) / 2
-            y = (self.canvas.winfo_height() - self.pil_image.height) / 2
-
-            self.canvas.delete(self.image_obj_id)
-            self.photo_image = ImageTk.PhotoImage(self.pil_image)
-            self.image_obj_id = self.canvas.create_image(x, y, anchor="nw", image=self.photo_image)
+            self.show_current_image()
 
     def show_image_buttons(self):
         if not self.images:
@@ -136,11 +127,13 @@ class BatchBackgroundRemoverApp:
     def show_previous_image(self):
         if self.images:
             self.current_image_index = (self.current_image_index - 1) % len(self.images)
+            self.current_zoom_level = 5
             self.show_current_image()
 
     def show_next_image(self):
         if self.images:
             self.current_image_index = (self.current_image_index + 1) % len(self.images)
+            self.current_zoom_level = 5
             self.show_current_image()
 
     def start_drag(self, event):
@@ -166,9 +159,6 @@ class BatchBackgroundRemoverApp:
             os.makedirs(self.output_directory)
 
         if len(self.images) > 1:
-            # Clear the processed images list
-            processed_images.clear()
-
             for image_path in self.images:
                 with open(image_path, 'rb') as image_file:
                     image_data = image_file.read()
@@ -176,7 +166,6 @@ class BatchBackgroundRemoverApp:
 
             messagebox.showinfo("Info", "Images processed and saved to the specified directory.")
             self.show_processed_images()
-            processed_images.clear()
         else:
             image_path = self.images[0]
             with open(image_path, 'rb') as image_file:
@@ -185,11 +174,10 @@ class BatchBackgroundRemoverApp:
 
             messagebox.showinfo("Info", "Image processed and saved to the specified directory.")
             self.show_processed_images()
-            processed_images.clear()
 
     def show_processed_images(self):
         if processed_images:
-            self.images = processed_images.copy()
+            self.images = processed_images
             self.current_image_index = 0
             self.show_current_image()
             self.show_image_buttons()
