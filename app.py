@@ -160,31 +160,11 @@ class BatchBackgroundRemoverApp:
         if not self.images:
             messagebox.showinfo("Info", "Please upload images before processing.")
             return
-        self.output_directory = filedialog.askdirectory(title="Select Output Directory")
-        if not self.output_directory:
-            messagebox.showinfo("Info", "Processing canceled. No output directory specified.")
-            return
-
         # Check if the output directory exists and create it if necessary
-        if not os.path.exists(self.output_directory):
-            os.makedirs(self.output_directory)
-
-        if len(self.images) > 1:
-            for image_path in self.images:
-                with open(image_path, 'rb') as image_file:
-                    image_data = image_file.read()
-                    self.batch_remove_background(image_data, self.output_directory)
-
-            messagebox.showinfo("Info", "Images processed and saved to the specified directory.")
-            self.show_processed_images()
-        else:
-            image_path = self.images[0]
-            with open(image_path, 'rb') as image_file:
-                image_data = image_file.read()
-                self.batch_remove_background(image_data, self.output_directory)
-
-            messagebox.showinfo("Info", "Image processed and saved to the specified directory.")
-            self.show_processed_images()
+        image_paths = self.images
+        self.batch_remove_background(image_paths)
+        messagebox.showinfo("Info", "Images processed and saved to the specified directory.")
+        self.show_processed_images()
 
     def show_processed_images(self):
         if self.processed_images:
@@ -194,31 +174,34 @@ class BatchBackgroundRemoverApp:
             self.show_current_image()
             self.show_image_buttons()
             self.save_button.config(state="active")
+            print("Processed images loaded.")
 
-    def remove_background(self, image_data, output_path):
+    def remove_background(self, image_data):
         output_data = remove(image_data)
         return output_data
 
-    def batch_remove_background(self, image_data, output_folder):
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
+    def batch_remove_background(self, image_paths):
+        self.processed_images = {}
+        for image_path in image_paths:
+            try:
+                with open(image_path, "rb") as image_file:
+                    image_data = image_file.read()
+                
+                # Now, you have the image data, and you can process it as needed
+                processed_data = self.remove_background(image_data)
 
-        unique_filename = str(uuid.uuid4()) + ".png"
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-        output_path = temp_file.name.replace("\\", "/")
+                # Create a temporary file for the processed image
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
+                    temp_file.write(processed_data)
+                    processed_image_path = temp_file.name
 
-        output_data = self.remove_background(image_data, output_path)
-        with open(output_path, 'wb') as output_file:
-            output_file.write(output_data)
+                # Store the path of the temporary processed image
+                self.processed_images[processed_image_path] = processed_image_path
+                print(f"Processed and stored: {image_path}")
+            except Exception as e:
+                print(f"Failed to process {image_path}: {e}")
+        self.show_processed_images()
 
-        # Store the mapping of temporary file to the original image
-        original_image = image_data
-        self.processed_images[output_path] = original_image
-
-        print("Image processed and saved to temporary file:", output_path)
-        print("Total processed images:", self.processed_images)
-
-        return output_path
 
     def save_image(self):
         if not self.current_image_path:
