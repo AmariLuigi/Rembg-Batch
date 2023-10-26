@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 from rembg import remove
 import pyautogui
 import pyperclip
+import threading
 
 class BatchBackgroundRemoverApp:
     def __init__(self, root):
@@ -210,9 +211,13 @@ class BatchBackgroundRemoverApp:
         # Check if the output directory exists and create it if necessary
         image_paths = self.images
         total_images = len(image_paths)
-        self.batch_remove_background(image_paths, total_images)
-        messagebox.showinfo("Info", "Images processed and saved to the specified directory.")
-        self.show_processed_images()
+        
+        # Disable the process button while processing
+        self.process_button.config(state="disabled")
+        
+        # Start image processing in a separate thread
+        processing_thread = threading.Thread(target=self.batch_remove_background, args=(image_paths, total_images))
+        processing_thread.start()
 
     def show_processed_images(self):
         if self.processed_images:
@@ -251,6 +256,9 @@ class BatchBackgroundRemoverApp:
                 self.update_progress(i + 1, total_images)
             except Exception as e:
                 print(f"Failed to process {image_path}: {e}")
+
+        # Re-enable the process button after processing is complete
+        self.process_button.config(state="active")
         self.show_processed_images()
 
     def save_image(self):
