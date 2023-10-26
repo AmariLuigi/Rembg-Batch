@@ -5,6 +5,7 @@ from tkinter import ttk, filedialog, messagebox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from PIL import Image, ImageTk
 from rembg import remove
+import pyautogui
 
 class BatchBackgroundRemoverApp:
     def __init__(self, root):
@@ -16,6 +17,8 @@ class BatchBackgroundRemoverApp:
         self.current_image_path = None
 
         self.initialize_arrows()
+        self.image_x = 0
+        self.image_y = 0
         self.canvas_width = 800
         self.canvas_height = 600
         self.pil_image = None
@@ -25,9 +28,30 @@ class BatchBackgroundRemoverApp:
         self.current_zoom_level = 5
         self.processed_images = {}
         self.output_directory = None
+        self.color_picker_cursor_active = False
 
         self.create_gui_elements()
         self.bind_events()
+    
+
+    def toggle_color_picker(self):
+        if self.color_picker_cursor_active:
+            self.color_picker_cursor_active = False
+            self.root.config(cursor="")
+        else:
+            self.color_picker_cursor_active = True
+            self.root.config(cursor="cross")  # Set the cursor to a crosshair cursor
+    
+    def capture_color(self, event):
+        if self.color_picker_cursor_active:
+            x, y = pyautogui.position()  # Get the current cursor position on the screen
+            color = pyautogui.screenshot().getpixel((x, y))  # Capture the color at the cursor's position
+
+            hex_color = "#{:02x}{:02x}{:02x}".format(color[0], color[1], color[2])
+            self.color_label.config(text=f"Picked Color: {hex_color}", bg=hex_color)
+            self.toggle_color_picker()
+
+
 
     def initialize_arrows(self):
         self.arrow_images = {
@@ -52,10 +76,12 @@ class BatchBackgroundRemoverApp:
         self.process_button = tk.Button(button_frame, text="Process Images", command=self.process_images)
         self.save_button = tk.Button(button_frame, text="Save", command=self.save_image)
         self.save_all_button = tk.Button(button_frame, text="Save All", command=self.save_all_images)
+        self.color_picker_button = tk.Button(button_frame, text="Pick Color", command=self.toggle_color_picker)
         self.upload_button.grid(row=0, column=0)
         self.process_button.grid(row=0, column=1)
         self.save_button.grid(row=0, column=2)
         self.save_all_button.grid(row=0, column=3)
+        self.color_picker_button.grid(row=0, column=4)
 
         # Add a progress bar and label for image counter
         progress_frame = tk.Frame(self.root)
@@ -64,19 +90,23 @@ class BatchBackgroundRemoverApp:
         self.progress_label.grid(row=0, column=0)
         self.progress_bar.grid(row=0, column=1)
 
+        # Create a label to display the picked color
+        self.color_label = tk.Label(progress_frame, text="Picked Color: #000000")
+        self.color_label.grid(row=0, column=2)
+
         # Pack the arrow_button_frame at the top, button_frame in the middle, and progress_frame at the bottom
         arrow_button_frame.pack(side="top")
         button_frame.pack(side="top", pady=5)
         progress_frame.pack(side="bottom", pady=5)
 
     def bind_events(self):
-        self.root.bind("<Configure>", self.on_canvas_resize)
         self.root.bind("<MouseWheel>", self.zoom)
         self.root.bind("<ButtonPress-1>", self.start_drag)
         self.root.bind("<B1-Motion>", self.on_drag)
 
         self.canvas.drop_target_register(DND_FILES)
         self.canvas.dnd_bind('<<Drop>>', self.handle_drop)
+        self.canvas.bind("<Button-1>", self.capture_color)
 
     def load_and_resize_arrow(self, image_path, size):
         img = Image.open(image_path)
@@ -126,11 +156,6 @@ class BatchBackgroundRemoverApp:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to open image: {e}")
 
-    def on_canvas_resize(self, event):
-        self.canvas_width = event.width
-        self.canvas_height = event.height
-        self.show_current_image()
-
     def zoom_image(self, image, factor):
         width, height = image.size
         new_width = int(width * factor)
@@ -143,7 +168,6 @@ class BatchBackgroundRemoverApp:
                 self.current_zoom_level = min(self.current_zoom_level + 1, len(self.zoom_factors) - 1)
             else:
                 self.current_zoom_level = max(self.current_zoom_level - 1, 0)
-
             self.show_current_image()
 
     def show_image_buttons(self):
@@ -177,6 +201,8 @@ class BatchBackgroundRemoverApp:
 
     def on_drag(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
+        self.image_x = self.canvas.canvasx(0)
+        self.image_y = self.canvas.canvasy(0)
 
     def process_images(self):
         if not self.images:
