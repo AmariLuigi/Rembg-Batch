@@ -1,50 +1,48 @@
-from tkinter import Canvas, Button, filedialog, messagebox
-from tkinterdnd2 import DND_FILES, TkinterDnD
-from PIL import Image, ImageTk
 import os
 import tempfile
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from tkinterdnd2 import DND_FILES, TkinterDnD
+from PIL import Image, ImageTk
 from rembg import remove
-import uuid
-import os
 
 class BatchBackgroundRemoverApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Batch Background Remover")
+        
         self.images = []
         self.current_image_index = 0
         self.current_image_path = None
-        self.arrow_images = {
-            "left": self.load_and_resize_arrow("Arrows-Back.512.png", (24, 24)),
-            "right": self.load_and_resize_arrow("Arrows-Forward.512.png", (24, 24))
-        }
 
+        self.initialize_arrows()
         self.canvas_width = 800
         self.canvas_height = 600
         self.pil_image = None
         self.photo_image = None
         self.image_obj_id = None
-        self.zoom_factors = [0.1, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0]  # Add more zoom levels if needed
-        self.current_zoom_level = 5  # Start with the original size
+        self.zoom_factors = [0.1, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0]
+        self.current_zoom_level = 5
         self.processed_images = {}
-
-        self.canvas = Canvas(self.root, width=self.canvas_width, height=self.canvas_height)
-        self.canvas.pack(fill="both", expand=True)
-        self.canvas.bind("<Configure>", self.on_canvas_resize)
-        self.canvas.bind("<MouseWheel>", self.zoom)
-        self.canvas.bind("<ButtonPress-1>", self.start_drag)
-        self.canvas.bind("<B1-Motion>", self.on_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.end_drag)
-
-        self.upload_button = Button(self.root, text="Upload Images", command=self.upload_images)
-        self.process_button = Button(self.root, text="Process Images", command=self.process_images)
-        self.prev_image_button = Button(self.root, image=self.arrow_images["left"], command=self.show_previous_image)
-        self.next_image_button = Button(self.root, image=self.arrow_images["right"], command=self.show_next_image)
-        self.save_button = Button(self.root, text="Save", command=self.save_image)
-        save_all_button = Button(self.root, text="Save All", command=self.save_all_images)
-
-
         self.output_directory = None
+
+        self.create_gui_elements()
+        self.bind_events()
+
+    def initialize_arrows(self):
+        self.arrow_images = {
+            "left": self.load_and_resize_arrow("Arrows-Back.512.png", (24, 24)),
+            "right": self.load_and_resize_arrow("Arrows-Forward.512.png", (24, 24))
+        }
+
+    def create_gui_elements(self):
+        self.canvas = tk.Canvas(self.root, width=self.canvas_width, height=self.canvas_height)
+        self.upload_button = tk.Button(self.root, text="Upload Images", command=self.upload_images)
+        self.process_button = tk.Button(self.root, text="Process Images", command=self.process_images)
+        self.prev_image_button = tk.Button(self.root, image=self.arrow_images["left"], command=self.show_previous_image)
+        self.next_image_button = tk.Button(self.root, image=self.arrow_images["right"], command=self.show_next_image)
+        self.save_button = tk.Button(self.root, text="Save", command=self.save_image)
+        self.save_all_button = tk.Button(self.root, text="Save All", command=self.save_all_images)
 
         self.upload_button.pack()
         self.process_button.pack()
@@ -52,9 +50,15 @@ class BatchBackgroundRemoverApp:
         self.next_image_button.pack(side="right")
         self.save_button.pack()
         self.save_button.config(state="disabled")
-        save_all_button.pack()
+        self.save_all_button.pack()
 
-        self.show_image_buttons()
+        self.canvas.pack(fill="both", expand=True)
+
+    def bind_events(self):
+        self.root.bind("<Configure>", self.on_canvas_resize)
+        self.root.bind("<MouseWheel>", self.zoom)
+        self.root.bind("<ButtonPress-1>", self.start_drag)
+        self.root.bind("<B1-Motion>", self.on_drag)
 
         self.canvas.drop_target_register(DND_FILES)
         self.canvas.dnd_bind('<<Drop>>', self.handle_drop)
@@ -153,9 +157,6 @@ class BatchBackgroundRemoverApp:
     def on_drag(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
 
-    def end_drag(self, event):
-        pass  # No need to do anything here
-
     def process_images(self):
         if not self.images:
             messagebox.showinfo("Info", "Please upload images before processing.")
@@ -202,7 +203,6 @@ class BatchBackgroundRemoverApp:
                 print(f"Failed to process {image_path}: {e}")
         self.show_processed_images()
 
-
     def save_image(self):
         if not self.current_image_path:
             messagebox.showinfo("Info", "No processed image to save.")
@@ -240,9 +240,6 @@ class BatchBackgroundRemoverApp:
                     pil_image.save(selected_file)
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to save {os.path.basename(image_path)}: {e}")
-
-            messagebox.showinfo("Info", "All processed images saved successfully.")
-
 
 if __name__ == "__main__":
     root = TkinterDnD.Tk()
