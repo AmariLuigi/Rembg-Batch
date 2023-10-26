@@ -1,7 +1,7 @@
 import os
 import tempfile
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 from PIL import Image, ImageTk
 from rembg import remove
@@ -57,9 +57,17 @@ class BatchBackgroundRemoverApp:
         self.save_button.grid(row=0, column=2)
         self.save_all_button.grid(row=0, column=3)
 
-        # Pack the arrow_button_frame at the top and the button_frame at the bottom
+        # Add a progress bar and label for image counter
+        progress_frame = tk.Frame(self.root)
+        self.progress_label = tk.Label(progress_frame, text="Image Progress: ")
+        self.progress_bar = ttk.Progressbar(progress_frame, mode='determinate')
+        self.progress_label.grid(row=0, column=0)
+        self.progress_bar.grid(row=0, column=1)
+
+        # Pack the arrow_button_frame at the top, button_frame in the middle, and progress_frame at the bottom
         arrow_button_frame.pack(side="top")
-        button_frame.pack(side="bottom", pady=5)
+        button_frame.pack(side="top", pady=5)
+        progress_frame.pack(side="bottom", pady=5)
 
     def bind_events(self):
         self.root.bind("<Configure>", self.on_canvas_resize)
@@ -91,6 +99,11 @@ class BatchBackgroundRemoverApp:
             self.images = files
             self.current_image_index = 0
             self.show_current_image()
+
+    def update_progress(self, current, total):
+        self.progress_label.config(text=f"Image Progress: {current}/{total}")
+        self.progress_bar["value"] = current * 100 / total
+        self.root.update_idletasks()
 
 
     def show_current_image(self):
@@ -169,9 +182,11 @@ class BatchBackgroundRemoverApp:
         if not self.images:
             messagebox.showinfo("Info", "Please upload images before processing.")
             return
+
         # Check if the output directory exists and create it if necessary
         image_paths = self.images
-        self.batch_remove_background(image_paths)
+        total_images = len(image_paths)
+        self.batch_remove_background(image_paths, total_images)
         messagebox.showinfo("Info", "Images processed and saved to the specified directory.")
         self.show_processed_images()
 
@@ -189,9 +204,9 @@ class BatchBackgroundRemoverApp:
         output_data = remove(image_data)
         return output_data
 
-    def batch_remove_background(self, image_paths):
+    def batch_remove_background(self, image_paths, total_images):
         self.processed_images = {}
-        for image_path in image_paths:
+        for i, image_path in enumerate(image_paths):
             try:
                 with open(image_path, "rb") as image_file:
                     image_data = image_file.read()
@@ -207,6 +222,9 @@ class BatchBackgroundRemoverApp:
                 # Store the path of the temporary processed image
                 self.processed_images[processed_image_path] = processed_image_path
                 print(f"Processed and stored: {image_path}")
+
+                # Update progress bar and image counter
+                self.update_progress(i + 1, total_images)
             except Exception as e:
                 print(f"Failed to process {image_path}: {e}")
         self.show_processed_images()
