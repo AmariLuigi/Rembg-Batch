@@ -6,6 +6,7 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 from PIL import Image, ImageTk
 from rembg import remove
 import pyautogui
+import pyperclip
 
 class BatchBackgroundRemoverApp:
     def __init__(self, root):
@@ -17,8 +18,6 @@ class BatchBackgroundRemoverApp:
         self.current_image_path = None
 
         self.initialize_arrows()
-        self.image_x = 0
-        self.image_y = 0
         self.canvas_width = 800
         self.canvas_height = 600
         self.pil_image = None
@@ -49,6 +48,7 @@ class BatchBackgroundRemoverApp:
 
             hex_color = "#{:02x}{:02x}{:02x}".format(color[0], color[1], color[2])
             self.color_label.config(text=f"Picked Color: {hex_color}", bg=hex_color)
+            pyperclip.copy(hex_color)
             self.toggle_color_picker()
 
 
@@ -201,8 +201,6 @@ class BatchBackgroundRemoverApp:
 
     def on_drag(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
-        self.image_x = self.canvas.canvasx(0)
-        self.image_y = self.canvas.canvasy(0)
 
     def process_images(self):
         if not self.images:

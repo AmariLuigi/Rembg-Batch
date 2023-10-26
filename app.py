@@ -6,6 +6,7 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 from PIL import Image, ImageTk
 from rembg import remove
 import pyautogui
+import pyperclip
 
 class BatchBackgroundRemoverApp:
     def __init__(self, root):
@@ -47,6 +48,7 @@ class BatchBackgroundRemoverApp:
 
             hex_color = "#{:02x}{:02x}{:02x}".format(color[0], color[1], color[2])
             self.color_label.config(text=f"Picked Color: {hex_color}", bg=hex_color)
+            pyperclip.copy(hex_color)
             self.toggle_color_picker()
 
 
