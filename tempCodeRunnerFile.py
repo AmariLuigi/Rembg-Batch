@@ -37,34 +37,29 @@ class BatchBackgroundRemoverApp:
 
     def create_gui_elements(self):
         self.canvas = tk.Canvas(self.root, width=self.canvas_width, height=self.canvas_height)
-        
-        # Create a frame to hold the buttons at the bottom of the canvas
+        self.canvas.pack(fill="both", expand=True)
+
+        # Create a frame for the arrow buttons and pack them to the top
+        arrow_button_frame = tk.Frame(self.root)
+        self.prev_image_button = tk.Button(arrow_button_frame, image=self.arrow_images["left"], command=self.show_previous_image)
+        self.next_image_button = tk.Button(arrow_button_frame, image=self.arrow_images["right"], command=self.show_next_image)
+        self.prev_image_button.pack(side="left")
+        self.next_image_button.pack(side="right")
+
+        # Create a frame for the other buttons and use grid to center them
         button_frame = tk.Frame(self.root)
         self.upload_button = tk.Button(button_frame, text="Upload Images", command=self.upload_images)
         self.process_button = tk.Button(button_frame, text="Process Images", command=self.process_images)
         self.save_button = tk.Button(button_frame, text="Save", command=self.save_image)
         self.save_all_button = tk.Button(button_frame, text="Save All", command=self.save_all_images)
+        self.upload_button.grid(row=0, column=0)
+        self.process_button.grid(row=0, column=1)
+        self.save_button.grid(row=0, column=2)
+        self.save_all_button.grid(row=0, column=3)
 
-        # Pack buttons side by side in the frame
-        self.upload_button.pack(side=tk.LEFT)
-        self.process_button.pack(side=tk.LEFT)
-        self.save_button.pack(side=tk.LEFT)
-        self.save_all_button.pack(side=tk.LEFT)
-
-        button_frame.pack(side=tk.BOTTOM, fill=tk.X)  # Place the button frame at the bottom of the window
-
-        self.prev_image_button = tk.Button(self.root, image=self.arrow_images["left"], command=self.show_previous_image)
-        self.next_image_button = tk.Button(self.root, image=self.arrow_images["right"], command=self.show_next_image)
-
-        self.upload_button.pack()
-        self.process_button.pack()
-        self.prev_image_button.pack(side="left")
-        self.next_image_button.pack(side="right")
-
-        self.save_button.pack()
-        self.save_button.config(state="disabled")
-
-        self.canvas.pack(fill="both", expand=True)
+        # Pack the arrow_button_frame at the top and the button_frame at the bottom
+        arrow_button_frame.pack(side="top")
+        button_frame.pack(side="bottom", pady=5)
 
     def bind_events(self):
         self.root.bind("<Configure>", self.on_canvas_resize)
@@ -96,6 +91,7 @@ class BatchBackgroundRemoverApp:
             self.images = files
             self.current_image_index = 0
             self.show_current_image()
+
 
     def show_current_image(self):
         if self.images:
