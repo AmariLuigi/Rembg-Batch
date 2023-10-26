@@ -17,8 +17,6 @@ class BatchBackgroundRemoverApp:
         self.current_image_path = None
 
         self.initialize_arrows()
-        self.image_x = 0
-        self.image_y = 0
         self.canvas_width = 800
         self.canvas_height = 600
         self.pil_image = None
@@ -201,8 +199,6 @@ class BatchBackgroundRemoverApp:
 
     def on_drag(self, event):
         self.canvas.scan_dragto(event.x, event.y, gain=1)
-        self.image_x = self.canvas.canvasx(0)
-        self.image_y = self.canvas.canvasy(0)
 
     def process_images(self):
         if not self.images:
