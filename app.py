@@ -37,20 +37,32 @@ class BatchBackgroundRemoverApp:
 
     def create_gui_elements(self):
         self.canvas = tk.Canvas(self.root, width=self.canvas_width, height=self.canvas_height)
-        self.upload_button = tk.Button(self.root, text="Upload Images", command=self.upload_images)
-        self.process_button = tk.Button(self.root, text="Process Images", command=self.process_images)
+        
+        # Create a frame to hold the buttons at the bottom of the canvas
+        button_frame = tk.Frame(self.root)
+        self.upload_button = tk.Button(button_frame, text="Upload Images", command=self.upload_images)
+        self.process_button = tk.Button(button_frame, text="Process Images", command=self.process_images)
+        self.save_button = tk.Button(button_frame, text="Save", command=self.save_image)
+        self.save_all_button = tk.Button(button_frame, text="Save All", command=self.save_all_images)
+
+        # Pack buttons side by side in the frame
+        self.upload_button.pack(side=tk.LEFT)
+        self.process_button.pack(side=tk.LEFT)
+        self.save_button.pack(side=tk.LEFT)
+        self.save_all_button.pack(side=tk.LEFT)
+
+        button_frame.pack(side=tk.BOTTOM, fill=tk.X)  # Place the button frame at the bottom of the window
+
         self.prev_image_button = tk.Button(self.root, image=self.arrow_images["left"], command=self.show_previous_image)
         self.next_image_button = tk.Button(self.root, image=self.arrow_images["right"], command=self.show_next_image)
-        self.save_button = tk.Button(self.root, text="Save", command=self.save_image)
-        self.save_all_button = tk.Button(self.root, text="Save All", command=self.save_all_images)
 
         self.upload_button.pack()
         self.process_button.pack()
         self.prev_image_button.pack(side="left")
         self.next_image_button.pack(side="right")
+
         self.save_button.pack()
         self.save_button.config(state="disabled")
-        self.save_all_button.pack()
 
         self.canvas.pack(fill="both", expand=True)
 
